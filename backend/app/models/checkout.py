@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, DateTime, Text, TIMESTAMP
+from sqlalchemy import String, Text, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from datetime import datetime
