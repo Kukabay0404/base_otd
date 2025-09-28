@@ -158,7 +158,7 @@ function RoomCard({ room }: { room: Room }) {
             Выходные: <span className="font-semibold">{room.priceWeekend}</span>
           </p>
         </div>
-        <Link href="/booking">
+        <Link href="/checkout">
           <button className="mt-6 bg-green-700 hover:bg-green-800 text-white px-6 py-3 rounded-lg">
             Забронировать
           </button>
