@@ -1,7 +1,9 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
 from typing import List
+
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
+
 
 class RoomBase(BaseModel):
     title: str
@@ -15,16 +17,19 @@ class RoomBase(BaseModel):
     images: List[str]
 
     model_config = ConfigDict(
-        from_attributes=True,  # поддержка ORM
-        alias_generator=to_camel,  # 👈 автоматически превращает в camelCase
-        populate_by_name=True  # можно использовать snake_case при создании
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
     )
+
 
 class RoomCreate(RoomBase):
     pass
 
+
 class RoomUpdate(RoomBase):
     pass
+
 
 class GuestInfoRoom(BaseModel):
     adults: int
@@ -38,20 +43,20 @@ class SearchRequestRoom(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class QuickSearchRequest(BaseModel):
     startDate: datetime
     endDate: datetime
     adults: int
     children: int = 0
 
+
 class RoomOut(RoomBase):
     id: int
     created_at: datetime
 
     model_config = ConfigDict(
-        from_attributes=True,  # 👈 важно, чтобы FastAPI мапил ORM в схему
+        from_attributes=True,
         alias_generator=to_camel,
-        populate_by_name=True
+        populate_by_name=True,
     )
-
-

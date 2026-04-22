@@ -1,7 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy import Boolean, CheckConstraint, Integer, String, TIMESTAMP, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database import Base
 
 
@@ -16,24 +18,18 @@ class Cabin(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-
-    title: Mapped[str] = mapped_column(String(120), nullable=False)   # Название (например: "СРЕДНИЙ СРУБ №3")
-    description: Mapped[str] = mapped_column(String(500), nullable=True)  # Условия сдачи
-
-    rooms: Mapped[int] = mapped_column(Integer, nullable=False)       # Количество комнат
-    floors: Mapped[int] = mapped_column(Integer, nullable=False)      # Количество этажей
-    beds: Mapped[int] = mapped_column(Integer, nullable=False)        # Спальные места
-    category: Mapped[str] = mapped_column(String(100), nullable=False)  # Категория (например: "Стандарт")
-
-    price_weekdays: Mapped[int] = mapped_column(Integer, nullable=False)  # Цена будни
-    price_weekend: Mapped[int] = mapped_column(Integer, nullable=False)   # Цена выходные
-
-    pool: Mapped[bool] = mapped_column(Boolean, default=False)   # Бассейн: да/нет
-    images: Mapped[list[str]] = mapped_column(JSONB, nullable=True)  # Фото (список ссылок)
-    # bookings = relationship("Booking", back_populates="cabin")
-
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=True)
+    rooms: Mapped[int] = mapped_column(Integer, nullable=False)
+    floors: Mapped[int] = mapped_column(Integer, nullable=False)
+    beds: Mapped[int] = mapped_column(Integer, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    price_weekdays: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_weekend: Mapped[int] = mapped_column(Integer, nullable=False)
+    pool: Mapped[bool] = mapped_column(Boolean, default=False)
+    images: Mapped[list[str]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now(),
-        nullable=False
+        nullable=False,
     )

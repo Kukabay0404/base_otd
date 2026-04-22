@@ -1,7 +1,7 @@
-# schemas/cabin.py
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -20,7 +20,7 @@ class CabinBase(BaseModel):
     model_config = ConfigDict(
         from_attributes=True,
         alias_generator=to_camel,
-        populate_by_name=True
+        populate_by_name=True,
     )
 
 
@@ -42,8 +42,13 @@ class SearchRequest(BaseModel):
     endDate: datetime
     guests: List[GuestInfo]
 
+
 class CabinOut(CabinBase):
     id: int
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )

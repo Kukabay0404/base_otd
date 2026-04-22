@@ -1,21 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models, schemas
 from app.auth.deps import get_current_admin, get_current_user
 from app.database import get_db
+from app.cache.redis_client import get_redis_client
 
 
 router = APIRouter(prefix="/checkout", tags=["Booking"])
-
-
-def _ensure_admin(user: models.User) -> None:
-    if user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin role required",
-        )
 
 
 @router.post("/", response_model=schemas.checkout.BookingOut)
@@ -40,34 +33,63 @@ async def create_booking(
     if obj_exists.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Object not found")
 
-    overlap_filter = [
-        models.checkout.Booking.status.in_(["pending", "confirmed"]),
-        models.checkout.Booking.start_date < booking.end_date,
-        models.checkout.Booking.end_date > booking.start_date,
-    ]
-    if room_id is not None:
-        overlap_filter.append(models.checkout.Booking.room_id == room_id)
+    # Распределённый лок
+    redis = await get_redis_client()
+    if redis is None:
+        # Если Redis отключён, пропускаем лок (для development)
+        pass
     else:
-        overlap_filter.append(models.checkout.Booking.cabin_id == cabin_id)
+        lock_key = f"booking_lock:{booking.object_type}:{booking.object_id}:{booking.start_date.isoformat()}:{booking.end_date.isoformat()}"
+        
+        # Попытка установить лок на 30 секунд
+        lock_acquired = await redis.setnx(lock_key, str(current_user.id))
+        if not lock_acquired:
+            raise HTTPException(
+                status_code=409, 
+                detail="This spot is currently being reserved by another user. Please try again."
+            )
+        
+        # Установить TTL на лок
+        await redis.expire(lock_key, 30)
 
-    overlap = await db.execute(
-        select(models.checkout.Booking.id).where(and_(*overlap_filter))
-    )
-    if overlap.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=409, detail="Selected dates are not available")
+    try:
+        # Проверка доступности
+        overlap_filter = [
+            models.checkout.Booking.status.in_(["pending", "confirmed"]),
+            models.checkout.Booking.start_date < booking.end_date,
+            models.checkout.Booking.end_date > booking.start_date,
+        ]
+        if room_id is not None:
+            overlap_filter.append(models.checkout.Booking.room_id == room_id)
+        else:
+            overlap_filter.append(models.checkout.Booking.cabin_id == cabin_id)
 
-    payload = booking.model_dump()
-    payload["status"] = "pending"
-    payload["user_id"] = current_user.id
-    payload["email"] = current_user.email
-    payload["room_id"] = room_id
-    payload["cabin_id"] = cabin_id
+        overlap = await db.execute(
+            select(models.checkout.Booking.id).where(and_(*overlap_filter))
+        )
+        if overlap.scalar_one_or_none() is not None:
+            raise HTTPException(status_code=409, detail="Selected dates are not available")
 
-    db_booking = models.checkout.Booking(**payload)
-    db.add(db_booking)
-    await db.commit()
-    await db.refresh(db_booking)
-    return db_booking
+        # Создание бронирования
+        payload = booking.model_dump()
+        payload["status"] = "pending"
+        payload["user_id"] = current_user.id
+        payload["email"] = current_user.email
+        payload["room_id"] = room_id
+        payload["cabin_id"] = cabin_id
+
+        db_booking = models.checkout.Booking(**payload)
+        db.add(db_booking)
+        await db.commit()
+        await db.refresh(db_booking)
+        
+        if redis is not None:
+            return db_booking
+    
+    finally:
+        # Освободить лок
+        if redis is not None:
+            await redis.delete(lock_key)
 
 
 @router.get("/", response_model=list[schemas.checkout.BookingOut])
@@ -135,10 +157,8 @@ async def admin_update_booking_status(
     booking_id: int,
     payload: schemas.checkout.BookingStatusUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    _admin: models.User = Depends(get_current_admin),
 ):
-    _ensure_admin(current_user)
-
     result = await db.execute(
         update(models.checkout.Booking)
         .where(models.checkout.Booking.id == booking_id)
@@ -165,9 +185,8 @@ async def delete_booking(
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    is_admin = str(current_user.role) in {"admin", "UserRole.admin"}
     is_owner = booking.user_id == current_user.id
-    if not (is_admin or is_owner):
+    if not (current_user.is_admin or is_owner):
         raise HTTPException(status_code=403, detail="Not enough permissions")
 
     await db.delete(booking)

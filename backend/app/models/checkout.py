@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-from datetime import datetime
+
 from app.database import Base
+
 
 class Booking(Base):
     __tablename__ = "bookings"
@@ -73,19 +76,14 @@ class Booking(Base):
         nullable=True,
     )
 
-    # Универсальные поля
-    object_type: Mapped[str] = mapped_column(String(20), nullable=False)  # "room" или "cabin"
+    object_type: Mapped[str] = mapped_column(String(20), nullable=False)
     object_id: Mapped[int] = mapped_column(nullable=False)
-
-    # Клиент
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     middle_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(120), nullable=False)
     citizenship: Mapped[str] = mapped_column(String(50), nullable=False)
-
-    # Прочее
     comments: Mapped[str | None] = mapped_column(Text, nullable=True)
     payment: Mapped[str] = mapped_column(String(50), default="card")
     status: Mapped[str] = mapped_column(
@@ -94,8 +92,5 @@ class Booking(Base):
         server_default="pending",
         nullable=False,
     )
-
-    # Даты
     start_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
     end_date: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
-    

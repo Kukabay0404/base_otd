@@ -39,7 +39,7 @@ async def get_current_user_optional(
 
 
 async def get_current_admin(current_user: models.User = Depends(get_current_user)):
-    if str(current_user.role) not in {"admin", "UserRole.admin"}:
+    if not current_user.is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

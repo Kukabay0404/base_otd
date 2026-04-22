@@ -16,7 +16,6 @@ const images = [
 export default function Home() {
   const [current, setCurrent] = useState(0);
 
-  // Автоматическое переключение каждые 5 секунд
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % images.length);

@@ -21,8 +21,32 @@ export default function AuthForm() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const validateForm = () => {
+    if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+      toast.error("Введите корректный email");
+      return false;
+    }
+    if (!formData.password || formData.password.length < 6) {
+      toast.error("Пароль должен быть не менее 6 символов");
+      return false;
+    }
+    if (!isLogin) {
+      if (!formData.firstName || formData.firstName.length < 2) {
+        toast.error("Имя должно быть не менее 2 символов");
+        return false;
+      }
+      if (!formData.lastName || formData.lastName.length < 2) {
+        toast.error("Фамилия должна быть не менее 2 символов");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
 
     try {
       const url = isLogin

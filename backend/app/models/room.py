@@ -1,9 +1,9 @@
-from sqlalchemy import CheckConstraint, String, Integer, Boolean
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
-from sqlalchemy import TIMESTAMP
 from datetime import datetime
+
+from sqlalchemy import Boolean, CheckConstraint, Integer, String, TIMESTAMP
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.sql import func
 
 from app.database import Base
 
@@ -29,17 +29,11 @@ class Room(Base):
     beds: Mapped[int] = mapped_column(Integer, nullable=False)
     tv: Mapped[bool] = mapped_column(Boolean, default=False)
     capacity: Mapped[int | None] = mapped_column(Integer, nullable=True, server_default="1")
-
     price_weekdays: Mapped[int] = mapped_column(Integer, nullable=False)
     price_weekend: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    # bookings = relationship("Booking", back_populates="room")
     images: Mapped[list[str]] = mapped_column(JSONB, nullable=True)
-
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
-
-
