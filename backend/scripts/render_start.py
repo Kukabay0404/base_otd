@@ -1,7 +1,11 @@
 import asyncio
 import os
+from pathlib import Path
 import subprocess
 import sys
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND_DIR))
 
 import uvicorn
 from sqlalchemy import inspect, text
