@@ -82,9 +82,8 @@ async def create_booking(
         db.add(db_booking)
         await db.commit()
         await db.refresh(db_booking)
-        
-        if redis is not None:
-            return db_booking
+
+        return db_booking
     
     finally:
         # Освободить лок

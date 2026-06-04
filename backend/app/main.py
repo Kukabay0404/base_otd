@@ -24,7 +24,11 @@ async def lifespan(app: FastAPI):
     await close_redis_client()
 
 
-limiter = Limiter(key_func=get_remote_address, storage_uri=settings.REDIS_URL)
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=settings.REDIS_URL if settings.REDIS_ENABLED else None,
+    enabled=settings.REDIS_ENABLED,
+)
 app = FastAPI(title="Resort API", lifespan=lifespan)
 
 app.state.limiter = limiter

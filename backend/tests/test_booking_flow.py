@@ -42,6 +42,33 @@ async def _create_room(session_factory, models, *, title: str, capacity: int):
         return room
 
 
+async def _create_room_with_stale_capacity(
+    session_factory,
+    models,
+    *,
+    title: str,
+    beds: int,
+    capacity: int,
+):
+    async with session_factory() as session:
+        room = models.Room(
+            title=title,
+            category="standard",
+            rooms=1,
+            area="20m2",
+            beds=beds,
+            capacity=capacity,
+            tv=True,
+            price_weekdays=10000,
+            price_weekend=12000,
+            images=[],
+        )
+        session.add(room)
+        await session.commit()
+        await session.refresh(room)
+        return room
+
+
 async def _login(client, email: str, password: str = "secret123") -> str:
     response = await client.post(
         "/auth/login",
@@ -146,6 +173,34 @@ async def test_public_room_search_returns_only_available_rooms(
     room_ids = {room["id"] for room in response.json()}
     assert available_room.id in room_ids
     assert occupied_room.id not in room_ids
+
+
+@pytest.mark.asyncio
+async def test_public_room_search_uses_beds_when_capacity_is_stale(
+    client,
+    session_factory,
+    models,
+):
+    room = await _create_room_with_stale_capacity(
+        session_factory,
+        models,
+        title="Room With Stale Capacity",
+        beds=3,
+        capacity=1,
+    )
+
+    response = await client.post(
+        "/room_admin/public/search",
+        json={
+            "startDate": _iso(10),
+            "endDate": _iso(12),
+            "guests": [{"adults": 2, "children": 0}],
+        },
+    )
+
+    assert response.status_code == 200
+    room_ids = {found_room["id"] for found_room in response.json()}
+    assert room.id in room_ids
 
 
 @pytest.mark.asyncio

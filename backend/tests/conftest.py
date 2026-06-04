@@ -79,6 +79,7 @@ def app_modules(postgres_container: dict[str, str]):
     os.environ["AUTO_CREATE_TABLES"] = "0"
     os.environ["JWT_SECRET_KEY"] = "test-jwt-secret"
     os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
+    os.environ["REDIS_ENABLED"] = "0"
 
     config_module = importlib.import_module("app.core.config")
     config_module = importlib.reload(config_module)

@@ -10,6 +10,7 @@ from app import models, schemas
 from app.auth.deps import get_current_admin, get_current_user, get_current_user_optional
 from app.auth.hash import hash_password
 from app.auth.jwt_handler import create_access_token
+from app.core.config import settings
 from app.database import get_db
 from app.schemas import user
 
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, enabled=settings.REDIS_ENABLED)
 
 
 @router.post("/register", response_model=user.UserOut)

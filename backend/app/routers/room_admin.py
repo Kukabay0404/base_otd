@@ -12,6 +12,13 @@ from app.database import get_db
 router = APIRouter(prefix="/room_admin", tags=["Admin"])
 
 
+def _room_capacity_expr():
+    return func.greatest(
+        func.coalesce(models.Room.capacity, 0),
+        func.coalesce(models.Room.beds, 0),
+    )
+
+
 def _build_room_search_query(payload: schemas.room.SearchRequestRoom):
     total_guests = sum(g.adults + g.children for g in payload.guests)
 
@@ -30,7 +37,7 @@ def _build_room_search_query(payload: schemas.room.SearchRequestRoom):
     )
 
     return select(models.Room).where(
-        func.coalesce(models.Room.capacity, models.Room.beds, 0) >= total_guests,
+        _room_capacity_expr() >= total_guests,
         ~overlap_exists,
     )
 
@@ -56,7 +63,9 @@ async def create_room(
     db: AsyncSession = Depends(get_db),
     _admin: models.User = Depends(get_current_admin),
 ):
-    db_room = models.Room(**room.model_dump(by_alias=False))
+    room_data = room.model_dump(by_alias=False)
+    room_data["capacity"] = room_data["beds"]
+    db_room = models.Room(**room_data)
     db.add(db_room)
     await db.commit()
     await db.refresh(db_room)
@@ -70,10 +79,12 @@ async def update_room(
     db: AsyncSession = Depends(get_db),
     _admin: models.User = Depends(get_current_admin),
 ):
+    room_data = room.model_dump(by_alias=False)
+    room_data["capacity"] = room_data["beds"]
     query = (
         update(models.Room)
         .where(models.Room.id == room_id)
-        .values(**room.model_dump(by_alias=False))
+        .values(**room_data)
         .returning(models.Room)
     )
     result = await db.execute(query)
@@ -153,7 +164,7 @@ async def quick_search_rooms(
     )
 
     query = select(models.Room).where(
-        func.coalesce(models.Room.capacity, models.Room.beds, 0) >= total_guests,
+        _room_capacity_expr() >= total_guests,
         ~overlap_exists,
     )
 
@@ -186,7 +197,7 @@ async def quick_search_rooms_public(
     )
 
     query = select(models.Room).where(
-        func.coalesce(models.Room.capacity, models.Room.beds, 0) >= total_guests,
+        _room_capacity_expr() >= total_guests,
         ~overlap_exists,
     )
 
