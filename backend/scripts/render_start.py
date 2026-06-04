@@ -18,7 +18,11 @@ CORE_TABLES = {"users", "rooms", "cabins", "bookings"}
 
 
 def _run_alembic(*args: str) -> None:
-    subprocess.run([sys.executable, "-m", "alembic", *args], check=True)
+    subprocess.run(
+        [sys.executable, "-m", "alembic", *args],
+        cwd=BACKEND_DIR,
+        check=True,
+    )
 
 
 async def _get_public_tables() -> set[str]:
